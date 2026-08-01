@@ -1,0 +1,28 @@
+{
+  "n": 20,
+  "planner": "rule_based",
+  "conditions": {
+    "clean": {
+      "trials": 20,
+      "asr": 0.0,
+      "asr_ci": [
+        0,
+        0.161
+      ],
+      "detected": 0,
+      "split": 0,
+      "l1_clean": 20
+    },
+    "injected": {
+      "trials": 20,
+      "asr": 0.0,
+      "asr_ci": [
+        0,
+        0.161
+      ],
+      "detected": 0,
+      "split": 0,
+      "l1_clean": 20
+    }
+  }
+}

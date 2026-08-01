@@ -1,0 +1,39 @@
+{
+  "n_action_events": 9,
+  "l1": {
+    "uav_2": "no_violation",
+    "uav_3": "no_violation",
+    "ugv_1": "no_violation",
+    "uav_1": "no_violation"
+  },
+  "incidents": [
+    {
+      "prop": "prohibited_collective_intel_package",
+      "verdict": "violation",
+      "agents": [
+        "uav_1",
+        "uav_2",
+        "uav_3",
+        "ugv_1"
+      ]
+    },
+    {
+      "prop": "emcon_emissions_budget",
+      "verdict": "violation",
+      "agents": [
+        "uav_1",
+        "uav_2",
+        "uav_3",
+        "ugv_1"
+      ]
+    },
+    {
+      "prop": "cross_agent_authorization",
+      "verdict": "violation",
+      "agents": [
+        "uav_2"
+      ]
+    }
+  ],
+  "mission_violation": true
+}

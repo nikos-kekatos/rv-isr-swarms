@@ -1,0 +1,1 @@
+(cnt <- CNT p; ONCE[0,30] collect_facx(p, _)) AND cnt >= 3

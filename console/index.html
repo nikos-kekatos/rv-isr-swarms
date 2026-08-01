@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mission RV Console — ISR swarm compositional RV</title>
+<style>
+  :root { --bg:#0d1117; --panel:#111722; --edge:#243040; --fg:#c9d4e0; --dim:#7d8 da5;
+          --grn:#3ecf7a; --red:#ff5c5c; --amb:#e3b341; --blue:#4f9dff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  .bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+         padding:8px 12px; background:#0a0e14; border-bottom:1px solid var(--edge); }
+  button, select, input { background:#1b2433; color:var(--fg); border:1px solid var(--edge);
+         border-radius:5px; padding:5px 10px; font:inherit; cursor:pointer; }
+  button:hover { border-color:var(--blue); }
+  input { width:82px; cursor:text; }
+  label { color:var(--dim); }
+  .grid { display:grid; grid-template-columns: 1.05fr 1.15fr 0.95fr; gap:10px; padding:10px; }
+  .panel { background:var(--panel); border:1px solid var(--edge); border-radius:8px; padding:10px; }
+  .panel h2 { margin:0 0 8px; font-size:12px; color:var(--dim); font-weight:600;
+              text-transform:uppercase; letter-spacing:.04em; }
+  canvas { width:100%; height:auto; background:#0a0e14; border:1px solid var(--edge); border-radius:6px; }
+  textarea { width:100%; height:220px; resize:vertical; background:#0a0e14; color:#9fb3c8;
+             border:1px solid var(--edge); border-radius:6px; padding:8px; font:inherit; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .chip { padding:5px 9px; border-radius:5px; border:1px solid; font-size:12px; }
+  .hold { color:var(--grn); border-color:var(--grn); background:rgba(62,207,122,.08); }
+  .viol { color:var(--red); border-color:var(--red); background:rgba(255,92,92,.10); }
+  .unk  { color:var(--amb); border-color:var(--amb); background:rgba(227,179,65,.10); }
+  .strips { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; padding:0 10px 10px; }
+  .strip { background:var(--panel); border:1px solid var(--edge); border-radius:8px; padding:9px; min-height:74px; }
+  .strip h3 { margin:0 0 6px; font-size:11px; color:var(--dim); text-transform:uppercase; }
+  .ev { color:var(--amb); } .det { color:var(--blue); }
+  .l1row span { margin-right:10px; }
+  .tabs { display:flex; gap:6px; padding:0 10px; }
+  .tab { padding:6px 12px; border:1px solid var(--edge); border-bottom:none;
+         border-radius:6px 6px 0 0; background:#0a0e14; color:var(--dim); }
+  .tab.active { color:var(--fg); background:var(--panel); }
+  #tabbody { margin:0 10px 12px; background:var(--panel); border:1px solid var(--edge);
+             border-radius:0 8px 8px 8px; padding:10px; white-space:pre-wrap; min-height:60px; }
+  .prov { color:var(--dim); font-size:11px; }
+  .clock { color:var(--dim); margin-left:auto; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <button id="play">▶ play</button>
+    <button id="step">▶| step</button>
+    <button id="reset">⏮ reset</button>
+    <label>scenario</label>
+    <select id="scenario">
+      <option value="intel_package">ISR intel-package</option>
+      <option value="benign">benign control</option>
+      <option value="coverage">sector coverage</option>
+      <option value="recovery">recovery (jam→return)</option>
+      <option value="sitl">SITL replay (real flight)</option>
+    </select>
+    <label>fault</label>
+    <select id="fault">
+      <option value="clean">clean (GT)</option>
+      <option value="drop-witness">fault: drop witness</option>
+      <option value="jam-platform">fault: jam platform</option>
+      <option value="reorder">fault: reorder</option>
+    </select>
+    <label>monitor</label>
+    <select id="mode">
+      <option value="fabric">RV-Fabric (evidence-aware)</option>
+      <option value="central">central (best-effort)</option>
+      <option value="both">both (compare)</option>
+    </select>
+    <label>B_mission</label><input id="emcon" type="number" value="900"/>
+    <button id="apply">apply spec</button>
+    <button id="eval">run eval</button>
+    <span class="clock" id="clock">t = 0</span>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Mission map · GT tracks</h2>
+      <canvas id="map" width="600" height="600"></canvas>
+    </div>
+    <div class="panel">
+      <h2>L1/L3 monitor spec · swarm_rv.py (B_mission editable)</h2>
+      <textarea id="cvspec" spellcheck="false"></textarea>
+      <h2 style="margin-top:8px">THIS frame · active events → monitor</h2>
+      <div id="events" class="strip" style="min-height:60px"></div>
+    </div>
+    <div class="panel">
+      <h2>Property (L3) · MonPoly MFOTL (p_coord.mfotl) + verdicts</h2>
+      <textarea id="qtl" spellcheck="false" style="height:215px"></textarea>
+      <div class="chips" id="props"></div>
+      <div class="prov" id="prov" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <div class="strips">
+    <div class="strip"><h3>L1 · per-robot verdicts</h3><div id="l1" class="l1row"></div></div>
+    <div class="strip"><h3>Monitor</h3><div id="modeinfo"></div></div>
+    <div class="strip"><h3>Headline</h3><div id="headline"></div></div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr;">
+    <div class="panel">
+      <h2>LLM planner in the loop · real model → schema-valid actions → the same monitors</h2>
+      <div class="bar" style="background:transparent;border:none;padding:0 0 9px;">
+        <label>attack</label><select id="atk"></select>
+        <label>model</label><select id="model"></select>
+        <label>injection</label>
+        <select id="inj"><option value="directive">directive</option><option value="clean">clean (control)</option></select>
+        <button id="runllm">▶ run planner</button>
+        <span id="llmbadge" style="margin-left:10px">— pick an attack + model, then run —</span>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr; padding:0; gap:10px;">
+        <div>
+          <h2>emitted action stream</h2>
+          <div id="llmacts" class="strip" style="min-height:96px"></div>
+          <h2 style="margin-top:8px">L1 · per-platform (each individually compliant)</h2>
+          <div id="llml1" class="l1row"></div>
+        </div>
+        <div>
+          <h2>L3 · cross-agent monitor verdict</h2>
+          <div class="chips" id="llml3"></div>
+          <div class="prov" id="llmprov" style="margin-top:8px"></div>
+          <div id="llmnote" style="margin-top:8px;color:var(--dim)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-t="log">Log</div>
+    <div class="tab" data-t="eval">Eval</div>
+  </div>
+  <div id="tabbody">Load a fault, step or play. Then “run eval” to score the monitors vs the clean baseline.</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let RUN = null, i = 0, timer = null;
+
+async function load() {
+  const P = new URLSearchParams(location.search);
+  for (const k of ['scenario', 'fault', 'mode']) if (P.get(k)) $('#' + k).value = P.get(k);
+  if (P.get('emcon')) $('#emcon').value = P.get('emcon');
+  const sc = $('#scenario').value, fault = $('#fault').value, mode = $('#mode').value, emcon = $('#emcon').value;
+  const r = await fetch(`/api/run?scenario=${sc}&fault=${fault}&mode=${mode}&emcon=${emcon}`);
+  RUN = await r.json();
+  $('#cvspec').value = RUN.cvspec;
+  $('#qtl').value = RUN.qtl;
+  const fp = P.get('f');
+  i = fp === 'end' ? RUN.frames.length - 1
+      : (fp ? Math.min(RUN.frames.length - 1, Math.max(0, parseInt(fp))) : 0);
+  draw();
+}
+
+function color(v, c) {
+  if (v === 'violation') return 'viol';
+  if (v === 'unknown') return 'unk';
+  if (c && c !== 'sound') return 'unk';
+  return 'hold';
+}
+
+function scaleXY(g, x, y) {
+  const pad = 20, S = 560, W = g.AO[1], Hh = g.AO[3];
+  return [pad + x / W * S, pad + (Hh - y) / Hh * S];
+}
+
+function draw() {
+  if (!RUN) return;
+  const f = RUN.frames[i], g = RUN.geometry, cv = $('#map'), cx = cv.getContext('2d');
+  cx.clearRect(0, 0, 600, 600);
+  cx.fillStyle = '#0a0e14'; cx.fillRect(0, 0, 600, 600);
+  // Zsens
+  let [zx, zy] = scaleXY(g, g.ZSENS.x0, g.ZSENS.y1);
+  const zw = (g.ZSENS.x1 - g.ZSENS.x0) / g.AO[1] * 560, zh = (g.ZSENS.y1 - g.ZSENS.y0) / g.AO[3] * 560;
+  cx.fillStyle = 'rgba(227,179,65,.12)'; cx.strokeStyle = '#8a7a30';
+  cx.fillRect(zx, zy, zw, zh); cx.strokeRect(zx, zy, zw, zh);
+  cx.fillStyle = '#9a8a40'; cx.fillText('Zsens', zx + 4, zy + 14);
+  // FacX
+  const [fx, fy] = scaleXY(g, g.FACX.cx, g.FACX.cy), fr = g.FACX.r / g.AO[1] * 560;
+  cx.beginPath(); cx.arc(fx, fy, fr, 0, 7); cx.fillStyle = 'rgba(255,92,92,.15)';
+  cx.strokeStyle = '#b03030'; cx.fill(); cx.stroke();
+  cx.fillStyle = '#e08a8a'; cx.fillText('FacX (protected)', fx - 34, fy);
+  // priority sectors (coverage scenario)
+  (g.sectors || []).forEach(s => {
+    const [sx, sy] = scaleXY(g, s.cx, s.cy), r = 46;
+    cx.strokeStyle = '#3a4a5f'; cx.setLineDash([4, 3]);
+    cx.strokeRect(sx - r, sy - r, 2 * r, 2 * r); cx.setLineDash([]);
+    cx.fillStyle = '#6b7d92'; cx.fillText(s.name, sx - r + 3, sy - r + 12);
+  });
+  // trails
+  for (const ns in RUN.trails) {
+    const pts = RUN.trails[ns].filter((_, k) => k <= (f.t)); // up to current t (1 pt/s approx)
+    cx.strokeStyle = RUN.colors[ns]; cx.lineWidth = 1.5; cx.beginPath();
+    RUN.trails[ns].forEach((p, k) => {
+      if (p[0] === undefined) return;
+      const [sx, sy] = scaleXY(g, p[0], p[1]);
+      k ? cx.lineTo(sx, sy) : cx.moveTo(sx, sy);
+    });
+    cx.stroke();
+  }
+  // collects (stars) and enters (X) revealed so far
+  f.collects.forEach(a => {
+    const [sx, sy] = scaleXY(g, a.x, a.y);
+    cx.fillStyle = RUN.colors[a.agent] || '#fff';
+    cx.beginPath(); cx.arc(sx, sy, 5, 0, 7); cx.fill();
+    cx.fillStyle = '#cfe'; cx.fillText(a.attr, sx + 7, sy);
+  });
+  f.enters.forEach(a => {
+    const [sx, sy] = scaleXY(g, a.x, a.y);
+    cx.fillStyle = RUN.colors[a.agent] || '#fff'; cx.fillText('✕', sx - 3, sy + 4);
+  });
+  // current platform markers
+  for (const ns in f.positions) {
+    const [sx, sy] = scaleXY(g, f.positions[ns][0], f.positions[ns][1]);
+    cx.fillStyle = RUN.colors[ns]; cx.beginPath(); cx.arc(sx, sy, 5, 0, 7); cx.fill();
+    cx.fillStyle = RUN.colors[ns]; cx.fillText(ns, sx + 7, sy - 6);
+  }
+  $('#clock').textContent = `t = ${f.t}` + (f.note ? `  ·  ${f.note}` : '');
+  // property chips (fabric primary; when comparing, show central alongside)
+  const chipHTML = list => list.map(p => {
+    const cl = color(p.verdict, p.completeness);
+    const label = p.prop.replace('prohibited_collective_intel_package', 'noCollectivePackage')
+                        .replace('emcon_emissions_budget', 'emconWithinBudget')
+                        .replace('cross_agent_authorization', 'authorisedEntry');
+    const state = p.verdict === 'violation' ? 'VIOLATION'
+                : p.verdict === 'unknown' ? 'unknown' : 'hold';
+    return `<div class="chip ${cl}">${label} = ${state}</div>`;
+  }).join('');
+  const lbl = t => `<div style="width:100%;color:var(--dim);font-size:11px;margin:6px 0 3px">${t}</div>`;
+  $('#props').innerHTML = f.l3_alt
+    ? lbl('RV-Fabric (evidence-aware)') + chipHTML(f.l3) + lbl('central (best-effort) — silent all-clears in green') + chipHTML(f.l3_alt)
+    : chipHTML(f.l3);
+  // provenance
+  const viol = f.l3.filter(p => p.verdict === 'violation');
+  $('#prov').innerHTML = viol.length
+    ? 'provenance: ' + viol.map(p => `${p.prop.split('_')[0]}→{${p.agents.join(',')}}`).join('  ·  ')
+    : '';
+  // events strip
+  $('#events').innerHTML = f.events_this.length
+    ? f.events_this.map(e => `<span class="ev">${e}</span>`).join('<br>')
+    : '<span style="color:#556">— no new events —</span>';
+  // L1 row
+  $('#l1').innerHTML = Object.entries(f.l1).map(([a, v]) =>
+    `<span style="color:${v === 'no_violation' ? 'var(--grn)' : 'var(--red)'}">${a}:${v}</span>`).join('');
+  // monitor info + headline
+  $('#modeinfo').innerHTML = $('#mode').value === 'fabric'
+    ? 'evidence-aware: missing evidence → <span class="unk" style="padding:1px 5px">unknown</span>, never a clean all-clear'
+    : 'best-effort: no completeness signal → a lost witness reads as <b>no_violation</b>';
+  const anyViol = viol.length, anyUnk = f.l3.some(p => p.verdict === 'unknown');
+  $('#headline').innerHTML = anyViol
+    ? '<b style="color:var(--red)">MISSION VIOLATION</b> — every L1 compliant; caught only by composition'
+    : anyUnk ? '<b style="color:var(--amb)">UNKNOWN</b> — evidence incomplete; verdict withheld'
+    : 'all clear so far';
+}
+
+function stepTo(n) { if (!RUN) return; i = Math.max(0, Math.min(RUN.frames.length - 1, n)); draw(); }
+$('#step').onclick = () => stepTo(i + 1);
+$('#reset').onclick = () => { clearInterval(timer); timer = null; $('#play').textContent = '▶ play'; stepTo(0); };
+$('#play').onclick = () => {
+  if (timer) { clearInterval(timer); timer = null; $('#play').textContent = '▶ play'; return; }
+  $('#play').textContent = '⏸ pause';
+  timer = setInterval(() => {
+    if (i >= RUN.frames.length - 1) { clearInterval(timer); timer = null; $('#play').textContent = '▶ play'; return; }
+    stepTo(i + 1);
+  }, 600);
+};
+$('#apply').onclick = load;
+$('#fault').onchange = load;
+$('#mode').onchange = load;
+$('#scenario').onchange = load;
+
+$('#eval').onclick = async () => {
+  const r = await fetch(`/api/eval?scenario=${$('#scenario').value}&fault=${$('#fault').value}&emcon=${$('#emcon').value}`);
+  const e = await r.json();
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.t === 'eval'));
+  $('#tabbody').textContent =
+    `Eval — fault: ${e.fault}   (oracle incidents |I*| = ${e.oracle_incidents})\n\n` +
+    `                 preserved  downgraded(unknown)  SILENT false all-clears   NSCR\n` +
+    `  central          ${e.central.preserved}          ${e.central.downgraded}                    ${e.central.silent_fac}              ${e.central.nscr}%\n` +
+    `  RV-Fabric        ${e.fabric.preserved}          ${e.fabric.downgraded}                    ${e.fabric.silent_fac}              ${e.fabric.nscr}%\n\n` +
+    `provenance exact: ${e.provenance_ok}\n` +
+    `=> under this fault the central monitor silently clears ${e.central.silent_fac} real incident(s); ` +
+    `the evidence-aware fabric clears 0 (downgrades to unknown instead).`;
+};
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  if (t.dataset.t === 'log') $('#tabbody').textContent = 'Step/play to watch verdicts evolve. Switch fault + monitor to compare silent-clear (central) vs honest unknown (fabric).';
+});
+
+// --- LLM planner in the loop ---
+async function initLLM() {
+  let m;
+  try { m = await (await fetch('/api/models')).json(); } catch (e) { return; }
+  const atk = $('#atk');
+  (m.attacks || []).forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = a; atk.appendChild(o); });
+  const md = $('#model');
+  (m.ollama || []).forEach(x => { const o = document.createElement('option'); o.value = x; o.textContent = 'ollama: ' + x; md.appendChild(o); });
+  (m.anthropic || []).forEach(x => { const o = document.createElement('option'); o.value = x; o.textContent = 'claude: ' + x.replace('-20251001', ''); md.appendChild(o); });
+  if (!md.options.length) { const o = document.createElement('option'); o.textContent = 'no model reachable'; md.appendChild(o); }
+  // deep-link: ?atk=…&mdl=…&inj=…[&run=1] pre-selects the planner and optionally auto-runs
+  const P = new URLSearchParams(location.search);
+  if (P.get('atk')) $('#atk').value = P.get('atk');
+  if (P.get('mdl')) $('#model').value = P.get('mdl');
+  if (P.get('inj')) $('#inj').value = P.get('inj');
+  if (P.get('run')) runPlanner();
+}
+async function runPlanner() {
+  const badge = $('#llmbadge'); badge.innerHTML = '<span style="color:var(--dim)">running… (a hosted or large model can take a few seconds)</span>';
+  const atk = $('#atk').value, model = $('#model').value, inj = $('#inj').value;
+  let r;
+  try { r = await (await fetch(`/api/attack?attack=${encodeURIComponent(atk)}&model=${encodeURIComponent(model)}&injection=${inj}`)).json(); }
+  catch (e) { badge.innerHTML = '<span style="color:var(--red)">request failed</span>'; return; }
+  if (r.error) { badge.innerHTML = `<span style="color:var(--red)">${r.error}</span>`; return; }
+  badge.innerHTML = r.refused
+    ? '<b style="color:var(--amb)">REFUSED</b> — the model declined to emit a plan (safety refusal)'
+    : r.detected
+      ? '<b style="color:var(--red)">SPLIT DETECTED</b> — every L1 clean, only L3 caught the composition'
+      : '<b style="color:var(--grn)">no violation</b> — this plan contains no compositional breach';
+  $('#llmacts').innerHTML = r.actions.length ? r.actions.map(a => {
+    let s = `<span class="det">${a.agent}</span> ${a.kind}`;
+    if (a.target) s += ` ${a.target}`;
+    if (a.attr) s += `/${a.attr}`;
+    if (a.sensor) s += ` <span style="color:#6b7d92">[${a.sensor}]</span>`;
+    if (a.bytes) s += ` ${a.bytes}B`;
+    return s;
+  }).join('<br>') : '<span style="color:#556">— no actions emitted (refused / empty plan) —</span>';
+  $('#llml1').innerHTML = Object.entries(r.l1).map(([a, v]) =>
+    `<span style="color:${v === 'no_violation' ? 'var(--grn)' : 'var(--red)'}">${a}:${v}</span>`).join('')
+    || '<span style="color:#556">— none —</span>';
+  const cl = r.l3.verdict === 'violation' ? 'viol' : r.l3.verdict === 'unknown' ? 'unk' : 'hold';
+  $('#llml3').innerHTML = `<div class="chip ${cl}">${r.monitor} = ${r.l3.verdict.toUpperCase()}</div>`;
+  $('#llmprov').innerHTML = (r.l3.agents && r.l3.agents.length) ? 'provenance: {' + r.l3.agents.join(', ') + '}' : '';
+  $('#llmnote').textContent = `${r.backend} · ${r.model} · injection=${r.injection}`
+    + (r.l3.note ? ` · ${r.l3.note}` : '');
+}
+$('#runllm').onclick = runPlanner;
+initLLM();
+
+load();
+</script>
+</body>
+</html>
