@@ -70,3 +70,29 @@ harness/ros2_realism/   ROS 2 / DDS demo
 harness/sitl_mission/   ArduPilot SITL mission and analysis
 console/          browser console over the same monitors
 ```
+
+## Environment and seeds
+
+The paper's deterministic figures come from this environment:
+
+| | |
+|---|---|
+| Host | Apple silicon workstation, 12 cores, 26 GB, macOS 15.3 |
+| Reproduced on | Ubuntu 22.04 Lima VM, and a 4-vCPU Ubuntu 22.04 cloud instance |
+| Runtime | Python 3.14; monitors and mission generator use only the standard library |
+| Brokers | `eclipse-mosquitto:2` (MQTT, QoS 1) and `nats:2` (JetStream) |
+| Middleware | ROS 2 Humble in a headless `ros:humble` container |
+| Flight dynamics | ArduPilot SITL, four copters over MAVLink/TCP, 360 position samples |
+| Formal engine | MonPoly, past-time metric first-order fragment |
+| Mission clock | 1 Hz, verifier-resident |
+| Event rate | about 2 events per platform-second, payloads under 1 kB |
+
+Seeds and run sizes: latency runs use n=1000 events per condition at 15 ms producer pacing; the
+randomised suites are 500 task-split missions (seed 7), 400 noisy-threshold missions (seed 11) and
+300 jittery missions for the silence-timeout sweep. The deterministic suites have no wall-clock or
+network dependence, so they reproduce exactly.
+
+Two caveats. The scale timings (about 0.01 ms at 4 platforms rising to 1.2 ms at 1000) are wall-clock
+measurements and vary slightly between runs. The LLM attack-success rates depend on hosted models
+that change over time; the archived calls in `harness/*_archive.jsonl` preserve every prompt hash,
+model identifier, request parameter and raw response, but exact regeneration is not guaranteed.
