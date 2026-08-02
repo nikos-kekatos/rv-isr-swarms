@@ -1,5 +1,7 @@
 # rv-isr-swarms
 
+Released under the MIT License (see `LICENSE`).
+
 Artifact for *Mission-Level Runtime Assurance for LLM-Assisted ISR Swarms over a
 Verification-Aware Fabric*.
 
