@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 exp_defenses.py -- attacks vs defenses on the package attack under the directive injection
-(the AISec core). For a temperature-accepting model (claude-haiku-4-5) we measure the ASR of the
+(the distributed-injection core). For a temperature-accepting model (claude-haiku-4-5) we measure the ASR of the
 package attack under four defence conditions and, in every case, whether the compositional (L3)
 monitor still detects the split:
 

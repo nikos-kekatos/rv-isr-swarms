@@ -7,10 +7,9 @@ Code, archived model outputs and run instructions for:
 > Nikolaos Kekatos, Michael Ioannou, Panagiotis Katsaros, Alexios Lekidis,
 > Theodoros Nestoridis, Tom Nianios, Dimitrios Nikou.
 >
-> (The same harness also backs the earlier variants of this work titled
+> (The same harness also backs an earlier variant of this work titled
 > *Mission-Level Runtime Assurance for LLM-Assisted ISR Swarms over a
-> Verification-Aware Fabric* and the AISec-style companion *Compliant Apart,
-> Malicious Together*.)
+> Verification-Aware Fabric*.)
 
 The paper presents a three-layer (platform / squad / mission) compositional
 runtime-verification framework. A mission policy is decomposed into per-platform
