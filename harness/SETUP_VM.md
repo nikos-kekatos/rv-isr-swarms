@@ -16,7 +16,7 @@ limactl start --name swarm --cpus 6 --memory 16 --disk 60 template://ubuntu-lts
 limactl copy -r "$(cd ../../.. && pwd)" swarm:/tmp/rv-3-layer     # copy the repo in
 limactl shell swarm
 #  --- now inside the VM, on Ubuntu: ---
-bash /tmp/rv-3-layer/paper_mesas/paper3_swarm/harness/provision.sh
+bash /tmp/rv-3-layer/papers/paper_mesas/paper3_swarm/harness/provision.sh
 ```
 
 - **Guest:** Ubuntu LTS (Lima default; use 22.04 for ROS 2 Humble). 6+ vCPU, 16 GB RAM.
@@ -70,7 +70,7 @@ MAVLink→Python: `pip install pymavlink mavsdk`.
 
 ```bash
 git clone <this repo> && cd <repo>/paper_cloudnet/rv-fabric-impl
-docker build -t rvhier:latest ../../hierarchical-rv-rtlola   # MonPoly + RTLola (heavy, once)
+docker build -t rvhier:latest ../../../hierarchical-rv-rtlola   # MonPoly + RTLola (heavy, once)
 docker compose up -d mosquitto nats                          # MQTT + JetStream
 pip install -r requirements.txt                              # paho-mqtt, nats-py
 ```

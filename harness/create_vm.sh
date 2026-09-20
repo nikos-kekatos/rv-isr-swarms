@@ -40,7 +40,7 @@ log "3/4  copy repo -> $VM:/tmp/rv-3-layer  (may take a minute)"
 limactl copy -r "$REPO" "$VM:/tmp/rv-3-layer"
 
 log "4/4  provision inside the VM"
-limactl shell "$VM" bash /tmp/rv-3-layer/paper_mesas/paper3_swarm/harness/provision.sh
+limactl shell "$VM" bash /tmp/rv-3-layer/papers/paper_mesas/paper3_swarm/harness/provision.sh
 
 cat <<EOF
 

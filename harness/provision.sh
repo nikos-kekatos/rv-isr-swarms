@@ -30,7 +30,7 @@ if ! command -v apt-get >/dev/null 2>&1; then
      limactl copy -r "$(cd ../../.. && pwd)" swarm:/tmp/rv-3-layer
      limactl shell swarm
      #  --- now inside the VM: ---
-     bash /tmp/rv-3-layer/paper_mesas/paper3_swarm/harness/provision.sh
+     bash /tmp/rv-3-layer/papers/paper_mesas/paper3_swarm/harness/provision.sh
 
    (Apple-silicon Lima = arm64: good for ROS2/ArduPilot/fabric; for Gazebo GPU
     VISUAL rendering use a cloud x86 GPU VM. Gazebo physics runs headless in Lima.)
@@ -121,7 +121,7 @@ fi
 log "5/6  RV-Fabric: brokers + MonPoly/RTLola image"
 if [ -d "$REPO_DIR/paper_cloudnet/rv-fabric-impl" ]; then
   cd "$REPO_DIR/paper_cloudnet/rv-fabric-impl"
-  sudo docker build -t rvhier:latest ../../hierarchical-rv-rtlola   # heavy, once
+  sudo docker build -t rvhier:latest ../../../hierarchical-rv-rtlola   # heavy, once
   sudo docker compose up -d mosquitto nats
   pip3 install --user -r requirements.txt
 fi

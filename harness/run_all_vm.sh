@@ -46,7 +46,7 @@ cat <<EOF
 
 Optional Docker-based extras (run separately):
   real MonPoly cross-agent property:
-    sudo docker build -t rvhier:latest $HARNESS/../../../hierarchical-rv-rtlola   # heavy, once
+    sudo docker build -t rvhier:latest $HARNESS/../../../../hierarchical-rv-rtlola   # heavy, once
     ( cd $HARNESS && python3 swarm_to_monpoly.py )
   headless ROS 2 realism demo:
     bash $SITL/../ros2_realism/run_ros2_demo.sh attack

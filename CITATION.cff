@@ -1,0 +1,53 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "Evidence-Aware Compositional RV for ISR Swarms: reproduction repository"
+abstract: >-
+  Monitors, mission generator, fault injection, experiment drivers, realism
+  layers, browser console and archived LLM runs for three-layer compositional
+  runtime verification of LLM-assisted ISR swarms over an evidence-aware fabric.
+authors:
+  - family-names: Kekatos
+    given-names: Nikolaos
+    affiliation: "Clone Systems, Larnaca, Cyprus"
+  - family-names: Ioannou
+    given-names: Michael
+    affiliation: "Bolton Technologies, Limassol, Cyprus"
+  - family-names: Katsaros
+    given-names: Panagiotis
+    affiliation: "Aristotle University of Thessaloniki, Greece"
+  - family-names: Lekidis
+    given-names: Alexios
+    affiliation: "University of Thessaly, Larissa, Greece"
+  - family-names: Nestoridis
+    given-names: Theodoros
+    affiliation: "Clone Systems, Cyprus / Aristotle University of Thessaloniki, Greece"
+  - family-names: Nianios
+    given-names: Tom
+    affiliation: "Clone Systems, Larnaca, Cyprus"
+  - family-names: Nikou
+    given-names: Dimitrios
+    affiliation: "International Hellenic University, Greece"
+license: "NOASSERTION"
+repository-code: "https://github.com/nikos-kekatos/rv-isr-swarms"
+type: software
+preferred-citation:
+  type: conference-paper
+  title: >-
+    Evidence-Aware Compositional Runtime Verification for LLM-Assisted ISR
+    Swarms in Contested Environments
+  authors:
+    - family-names: Kekatos
+      given-names: Nikolaos
+    - family-names: Ioannou
+      given-names: Michael
+    - family-names: Katsaros
+      given-names: Panagiotis
+    - family-names: Lekidis
+      given-names: Alexios
+    - family-names: Nestoridis
+      given-names: Theodoros
+    - family-names: Nianios
+      given-names: Tom
+    - family-names: Nikou
+      given-names: Dimitrios
+  year: 2026

@@ -1,4 +1,9 @@
+out/
 __pycache__/
-*.pyc
+*.py[cod]
+.venv/
 .e2e-venv/
+**/.scala-build/
+**/.bsp/
+**/.bloop/
 .DS_Store

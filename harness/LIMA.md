@@ -46,7 +46,7 @@ limactl copy -r "$(cd ../../.. && pwd)" swarm:/tmp/rv-3-layer
 ```bash
 limactl shell swarm            # you are now root-capable inside Ubuntu
 # inside the VM:
-bash /tmp/rv-3-layer/paper_mesas/paper3_swarm/harness/provision.sh
+bash /tmp/rv-3-layer/papers/paper_mesas/paper3_swarm/harness/provision.sh
 ```
 `provision.sh` installs ROS 2 Humble + Gazebo + ArduPilot SITL + the RV-Fabric brokers +
 the harness image, and runs a smoke test. (On the Mac it refuses to run — it's Ubuntu-only.)
@@ -60,7 +60,7 @@ docker run --rm swarm-rv python3 experiments.py
 # realism layer: one ROS 2 namespace per platform
 source /opt/ros/humble/setup.bash
 SWARM_NS=uav_1,uav_2,uav_3,ugv_1 python3 \
-  /tmp/rv-3-layer/paper_mesas/paper3_swarm/harness/ros2_ardupilot_adapter.py
+  /tmp/rv-3-layer/papers/paper_mesas/paper3_swarm/harness/ros2_ardupilot_adapter.py
 ```
 
 ## 6. Manage the VM

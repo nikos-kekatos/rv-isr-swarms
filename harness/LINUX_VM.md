@@ -40,7 +40,7 @@ multipass mount "$(cd ../../.. && pwd)" swarm:/tmp/rv-3-layer
 multipass shell swarm
 # --- now inside the VM (Ubuntu 22.04) ---
 REPO_DIR=/tmp/rv-3-layer \
-  bash /tmp/rv-3-layer/paper_mesas/paper3_swarm/harness/provision.sh
+  bash /tmp/rv-3-layer/papers/paper_mesas/paper3_swarm/harness/provision.sh
 ```
 `provision.sh` installs ROS 2 Humble + Gazebo + ArduPilot SITL (container) + the
 RV-Fabric brokers + the `swarm-rv` image, and runs a smoke test. Setting `REPO_DIR`
@@ -54,7 +54,7 @@ sudo docker run --rm swarm-rv python3 experiments.py
 # realism layer, one ROS 2 namespace per platform:
 source /opt/ros/humble/setup.bash
 SWARM_NS=uav_1,uav_2,uav_3,ugv_1 python3 \
-  /tmp/rv-3-layer/paper_mesas/paper3_swarm/harness/ros2_ardupilot_adapter.py
+  /tmp/rv-3-layer/papers/paper_mesas/paper3_swarm/harness/ros2_ardupilot_adapter.py
 ```
 
 ### 6. Manage the VM
@@ -82,7 +82,7 @@ sudo qemu-img resize /var/lib/libvirt/images/swarm.img 60G
 cat > user-data <<'EOF'
 #cloud-config
 users: [{name: ubuntu, sudo: 'ALL=(ALL) NOPASSWD:ALL', shell: /bin/bash,
-         lock_passwd: false, plain_text_passwd: ubuntu}]
+         lock_passwd: false, plain_text_passwd: CHANGEME}]
 ssh_pwauth: true
 EOF
 cloud-localds seed.iso user-data
